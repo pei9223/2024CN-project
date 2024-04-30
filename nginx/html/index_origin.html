@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>List App</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            fetchItems();
+            $('#addItemForm').on('submit', function (event) {
+                event.preventDefault();
+                addItem();
+            });
+        });
+
+        function fetchItems() {
+            $.get('/api/items', function (data) {
+                $('#itemsList').empty();
+                $.each(data.items, function (index, item) {
+                    const listItem = $('<li>').text(item.name + ' ');
+                    const editButton = $('<button>').text('Edit').click(function () {
+                        editItem(item.id);
+                    });
+                    const deleteButton = $('<button>').text('Delete').click(function () {
+                        deleteItem(item.id);
+                    });
+                    listItem.append(editButton, deleteButton);
+                    $('#itemsList').append(listItem);
+                });
+            });
+        }
+
+        function addItem() {
+            const name = $('#itemName').val();
+            $.ajax({
+                url: '/api/items',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ name: name }),
+                success: function () {
+                    fetchItems();
+                    $('#itemName').val('');
+                },
+                error: function (xhr, status, error) {
+                    console.error('There was a problem with your fetch operation:', error);
+                }
+            });
+        }
+
+        function editItem(id) {
+            const newName = prompt('Enter the new name:');
+            if (newName) {
+                $.ajax({
+                    url: '/api/items/' + id,
+                    method: 'PUT',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ name: newName }),
+                    success: function () {
+                        fetchItems();
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('There was a problem with your fetch operation:', error);
+                    }
+                });
+            }
+        }
+
+        function deleteItem(id) {
+            $.ajax({
+                url: '/api/items/' + id,
+                method: 'DELETE',
+                success: function () {
+                    fetchItems();
+                },
+                error: function (xhr, status, error) {
+                    console.error('There was a problem with your fetch operation:', error);
+                }
+            });
+        }
+    </script>
+</head>
+
+<body>
+    <h1>List App1</h1>
+    <ul id="itemsList"></ul>
+    <form id="addItemForm">
+        <input type="text" id="itemName" placeholder="Add new item">
+        <button type="submit">Add Item</button>
+    </form>
+</body>
+
+</html>

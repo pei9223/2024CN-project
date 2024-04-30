@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Order Management System</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            fetchOrders();
+            $('#addOrderForm').on('submit', function (event) {
+                event.preventDefault();
+                addOrder();
+            });
+        });
+
+        function fetchOrders() {
+            $.get('/api/orders', function (data) {
+                $('#ordersTable tbody').empty();
+                $.each(data, function (index, order) {
+                    const row = $('<tr>');
+                    row.append(
+                        $('<td>').text(order.serialNo),
+                        $('<td>').text(order.priority),
+                        $('<td>').text(order.factory),
+                        $('<td>').text(order.lab),
+                        $('<td>').text(order.status),
+                        $('<td>').text(order.createdAt),
+                        $('<td>').text(order.createdBy),
+                        $('<td>').text(order.filePath),
+                        $('<td>').text(order.approvedAt),
+                        $('<td>').text(order.approvedBy),
+                        $('<td>').text(order.completedAt),
+                        $('<td>').text(order.completedBy)
+                    );
+                    $('#ordersTable tbody').append(row);
+                });
+            });
+        }
+
+        function addOrder() {
+            const formData = {
+                priority: $('#priority').val(),
+                factory: $('#factory').val(),
+                lab: $('#lab').val(),
+                filePath: $('#filePath').val()
+            };
+            $.ajax({
+                url: '/api/orders',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(formData),
+                success: function () {
+                    fetchOrders();
+                    $('#addOrderForm')[0].reset();
+                },
+                error: function (xhr, status, error) {
+                    console.error('There was a problem with your fetch operation:', error);
+                }
+            });
+        }
+    </script>
+</head>
+
+<body>
+    <h1>Order Management System</h1>
+    <table id="ordersTable" border="1">
+        <thead>
+            <tr>
+                <th>Serial No</th>
+                <th>Priority</th>
+                <th>Factory</th>
+                <th>Lab</th>
+                <th>Status</th>
+                <th>Created At</th>
+                <th>Created By</th>
+                <th>File Path</th>
+                <th>Approved At</th>
+                <th>Approved By</th>
+                <th>Completed At</th>
+                <th>Completed By</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Orders will be displayed here -->
+        </tbody>
+    </table>
+    <br>
+    <h2>Add New Order</h2>
+    <form id="addOrderForm">
+        <label for="priority">Priority:</label>
+        <select name="priority" id="priority">
+            <option value="regular">Regular</option>
+            <option value="urgent">Urgent</option>
+            <option value="emergency">Emergency</option>
+        </select><br>
+        <label for="factory">Factory:</label>
+        <select name="factory" id="factory">
+            <option value="Fab A">Fab A</option>
+            <option value="Fab B">Fab B</option>
+            <option value="Fab C">Fab C</option>
+        </select><br>
+        <label for="lab">Lab:</label>
+        <select name="lab" id="lab">
+            <option value="chemical">Chemical</option>
+            <option value="surface">Surface</option>
+            <option value="composition">Composition</option>
+        </select><br>
+        <label for="filePath">File Path:</label>
+        <input type="text" id="filePath"><br>
+        <button type="submit">Add Order</button>
+    </form>
+
+    
+</body>
+
+</html>

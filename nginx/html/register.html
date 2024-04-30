@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Register Page</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('#registerForm').on('submit', function (event) {
+                event.preventDefault();
+                register();
+            });
+        });
+
+        function register() {
+            const userID = $('#userID').val();
+            const userPassword = $('#userPassword').val();
+            const displayName = $('#displayName').val();
+            const userdata = {
+                    userID: userID,
+                    userPassword: userPassword,
+                    displayName: displayName
+            };
+            $.ajax({
+                url: '/api/register',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(userdata),
+                success: function (data) {
+                    alert('User registered successfully');
+                    window.location.href = '/api/login'; // Redirect to the login page after successful registration
+                },
+                error: function (xhr, status, error) {
+                    console.error('There was a problem with your registration:', error);
+                    alert('Error registering user');
+                }
+            });
+        }
+    </script>
+</head>
+
+<body>
+    <h1>Register Page</h1>
+    <form id="registerForm">
+        <label for="userID">User ID:</label><br>
+        <input type="text" id="userID" name="userID"><br>
+        <label for="userPassword">Password:</label><br>
+        <input type="password" id="userPassword" name="userPassword"><br>
+        <label for="displayName">Display Name:</label><br>
+        <input type="text" id="displayName" name="displayName"><br><br>
+        <button type="submit">Register</button>
+    </form>
+</body>
+
+</html>

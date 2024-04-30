@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>User Management System</title>
+</head>
+
+<body>
+    <h1>User Management System</h1>
+
+    <!-- Registration Form -->
+    <h2>Register</h2>
+    <form id="registerForm">
+        <label for="userID">User ID:</label>
+        <input type="text" name="userID" id="userID" required><br>
+        <label for="userPassword">Password:</label>
+        <input type="password" name="userPassword" id="userPassword" required><br>
+        <label for="displayName">Display Name:</label>
+        <input type="text" name="displayName" id="displayName" required><br>
+        <button type="submit">Register</button>
+    </form>
+
+    <!-- Login Form -->
+    <h2>Login</h2>
+    <form id="loginForm">
+        <label for="loginUserID">User ID:</label>
+        <input type="text" name="loginUserID" id="loginUserID" required><br>
+        <label for="loginUserPassword">Password:</label>
+        <input type="password" name="loginUserPassword" id="loginUserPassword" required><br>
+        <button type="submit">Login</button>
+    </form>
+
+    <!-- Logout Button (hidden by default) -->
+    <form id="logoutForm" style="display: none;">
+        <button type="submit">Logout</button>
+    </form>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.getElementById('registerForm').addEventListener('submit', function (event) {
+                event.preventDefault();
+                registerUser();
+            });
+
+            document.getElementById('loginForm').addEventListener('submit', function (event) {
+                event.preventDefault();
+                loginUser();
+            });
+
+            document.getElementById('logoutForm').addEventListener('submit', function (event) {
+                event.preventDefault();
+                logoutUser();
+            });
+        });
+
+        function registerUser() {
+            const formData = new FormData(document.getElementById('registerForm'));
+
+            fetch('/register', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('User registered successfully!');
+                    document.getElementById('registerForm').reset();
+                } else {
+                    console.error('Failed to register user:', response.statusText);
+                }
+            })
+            .catch(error => console.error('Error registering user:', error));
+        }
+
+        function loginUser() {
+            const userID = document.getElementById('loginUserID').value;
+            const userPassword = document.getElementById('loginUserPassword').value;
+
+            fetch('/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `userID=${userID}&userPassword=${userPassword}`
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('Login successful!');
+                    document.getElementById('loginForm').reset();
+                    document.getElementById('logoutForm').style.display = 'block';
+                } else {
+                    alert('Invalid user ID or password');
+                }
+            })
+            .catch(error => console.error('Error logging in:', error));
+        }
+
+        function logoutUser() {
+            fetch('/logout')
+            .then(response => {
+                if (response.ok) {
+                    alert('Logout successful!');
+                    document.getElementById('logoutForm').style.display = 'none';
+                } else {
+                    console.error('Failed to logout:', response.statusText);
+                }
+            })
+            .catch(error => console.error('Error logging out:', error));
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,64 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Login Page</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('#loginForm').on('submit', function (event) {
+                event.preventDefault();
+                login();
+            });
+        });
+
+        function login() {
+            const userID = $('#userID').val();
+            const userPassword = $('#userPassword').val();
+            const formData = new FormData();
+            formData.append('userID', userID);
+            formData.append('userPassword', userPassword);
+            $.ajax({
+                url: '/api/login',
+                method: 'POST',
+                processData: false, // Prevent jQuery from automatically processing the data
+                contentType: false, // Prevent jQuery from setting content type
+                data: formData,
+                success: function (data) {
+                    window.location.href = '/'; // Redirect to the home page after successful login
+                },
+                error: function (xhr, status, error) {
+                    console.error('There was a problem with your login:', error);
+                    alert('Invalid user ID or password');
+                }
+            });
+        }
+    </script>
+</head>
+
+<body>
+    <h1>Login Page</h1>
+    <form id="loginForm">
+        <label for="ID">User ID:</label><br>
+        <input type="text" id="userID" class="form-control" name="userID"><br>
+        <label for="Password">Password:</label><br>
+        <input type="password" id="userPassword" class="form-control" name="userPassword"><br><br>
+        <button type="submit">Login</button>
+    </form>
+</body>
+
+</html> -->
+
+<!DOCTYPE html>
+<head>
+
+</head>
+<body>
+    <form method='post' action="/api/login" enctype="multipart/form-data">
+        User ID: <input name="userID"><br>
+        Password: <input name="userPassword" type="password"><br>
+        <button type="submit">Log In</button>
+    </form>
+</body>
+</html>

@@ -1,9 +1,10 @@
 from flask import Flask, request, jsonify, url_for, request, redirect, flash, render_template
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import case
 import flask_login
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
-import sys
-# from forms import LoginForm, RegistrationForm
+from werkzeug.utils import secure_filename
+import os
 
 app = Flask(__name__)
 app.secret_key = "secretkey"
@@ -132,6 +133,18 @@ def manage_items():
 
 def add_order():
     data = request.json
+
+    # file upload
+    filePath = None
+    if 'file' in request.files:
+        file = request.files['file']
+        if file:
+            filename = secure_filename(file.filename)
+            file_path = os.path.join('uploads/', filename)
+            file.save(file_path)
+            filePath = file_path
+        # else:
+        #     return jsonify({'error': 'No file selected'}), 400
     
     # system created values
     status = 'Issued'
@@ -146,7 +159,7 @@ def add_order():
         status=status,
         createdAt=createdAt,
         createdBy=createdBy,
-        filePath=data.get('filePath'),  # if no filePath -> None
+        filePath=filePath,
         approvedAt=None,
         approvedBy=None,
         completedAt=None,
@@ -160,7 +173,22 @@ def add_order():
     return jsonify({'message': 'Order created successfully'}), 201
 
 def get_orders():
-    orders = Orders.query.all()
+
+    # get order method
+    sort_by = request.args.get('sort_by', 'priority')  # deafult:priority
+    if sort_by == 'createdAt':
+        orders = Orders.query.order_by(Orders.createdAt.desc()).all()
+    elif sort_by == 'priority':
+        orders = Orders.query.order_by(
+            Orders.status != 'Completed', 
+            Orders.status != 'Rejected', 
+            case(
+                (Orders.priority == 'emergency', 0),
+                (Orders.priority == 'urgent', 1),
+                (Orders.priority == 'regular', 2),
+                else_=3
+            ),
+            Orders.createdAt.desc()).all()
 
     orders_json = [{'serialNo': order.serialNo,
                     'priority': order.priority,

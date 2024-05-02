@@ -60,7 +60,7 @@
 
         // Function to fetch orders
         function fetchOrders() {
-            $.get('/api/orders', function (data) {
+            $.get('/api/orders?sort_by=priority', function (data) {
                 $('#ordersTable tbody').empty();
                 $.each(data, function (index, order) {
                     const row = $('<tr>');

@@ -132,7 +132,9 @@ def manage_items():
     return get_orders()
 
 def add_order():
-    data = request.json
+    # data = request.json
+    # data = request.form
+    print(request.form.to_dict(), flush=True)
 
     # file upload
     filePath = None
@@ -153,9 +155,9 @@ def add_order():
     
     # create order
     order = Orders(
-        priority=data['priority'],
-        factory=data['factory'],
-        lab=data['lab'],
+        priority=request.form['priority'],
+        factory=request.form['factory'],
+        lab=request.form['lab'],
         status=status,
         createdAt=createdAt,
         createdBy=createdBy,

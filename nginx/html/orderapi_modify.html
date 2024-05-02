@@ -86,17 +86,26 @@
 
         // Function to add new order
         function addOrder() {
-            const formData = {
-                priority: $('#priority').val(),
-                factory: $('#factory').val(),
-                lab: $('#lab').val(),
-                filePath: $('#filePath').val()
-            };
+            // const formData = {
+            //     priority: $('#priority').val(),
+            //     factory: $('#factory').val(),
+            //     lab: $('#lab').val(),
+            //     file: $('#file')[0].files[0]
+            // };
+            const formData = new FormData();
+            formData.append('priority', $('#priority').val());
+            formData.append('factory', $('#factory').val());
+            formData.append('lab', $('#lab').val());
+            formData.append('file', $('#file')[0].files[0]);
+
             $.ajax({
                 url: '/api/orders',
                 method: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(formData),
+                // contentType: 'application/json',
+                // data: JSON.stringify(formData),
+                processData: false,  // 不要处理数据
+                contentType: false,  // 不要设置 content type
+                data: formData,
                 success: function () {
                     fetchOrders();
                     $('#addOrderForm')[0].reset();
@@ -154,8 +163,8 @@
             <option value="surface">Surface</option>
             <option value="composition">Composition</option>
         </select><br>
-        <label for="filePath">File Path:</label>
-        <input type="text" id="filePath"><br>
+        <label for="file">File:</label>
+        <input type="file" name="file" id="file"><br>
         <button type="submit">Add Order</button>
     </form>
 

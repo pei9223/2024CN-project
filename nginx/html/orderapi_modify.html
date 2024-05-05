@@ -97,6 +97,7 @@
             formData.append('factory', $('#factory').val());
             formData.append('lab', $('#lab').val());
             formData.append('file', $('#file')[0].files[0]);
+            formData.append('approvedBy', $('#approvedBy').val());
 
             $.ajax({
                 url: '/api/orders',
@@ -165,6 +166,8 @@
         </select><br>
         <label for="file">File:</label>
         <input type="file" name="file" id="file"><br>
+        <label for="approvedBy">approvedBy:</label>
+        <input type="text" name="approvedBy" id="approvedBy"><br>
         <button type="submit">Add Order</button>
     </form>
 

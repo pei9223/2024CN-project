@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, url_for, request, redirect, flash, render_template
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import case
+from sqlalchemy.dialects.postgresql import ARRAY
 import flask_login
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.utils import secure_filename
@@ -36,13 +37,11 @@ class Orders(db.Model):
     completedBy = db.Column(db.String(50))
 
 class User(UserMixin, db.Model):
-# class User(db.Model):
     __tablename__ = 'users'
     userID = db.Column(db.String(50), primary_key=True)
     userPassword = db.Column(db.String(255), nullable=False)
-    displayName = db.Column(db.String(100), nullable=False)
+    dep = db.Column(db.Enum('Fab A', 'Fab B', 'Fab C', 'chemical', 'surface', 'composition'), nullable=False)
     createdAt = db.Column(db.TIMESTAMP, nullable=False, server_default=db.func.current_timestamp())
-    approvedList = db.Column(db.JSON, nullable=False)
 
     def get_id(self):
         return self.userID
@@ -62,21 +61,21 @@ def user_create():
 
         id = data.get('userID')
         pswd = data.get('userPassword')
-        name = data.get('displayName')
+        dep = data.get('dep')
 
         # check if ID existed
         existing_user = User.query.filter_by(userID=id).first()
         if existing_user:
             return jsonify({'error': 'User ID already exists'}), 400
-
         
         # create user
         user = User(
             userID=id,
             userPassword=pswd,
-            displayName=name,
+            dep=dep,
+            # displayName=name,
             createdAt=db.func.current_timestamp(),
-            approvedList={}
+            # approvedList={}
         )
 
         # add order to db
@@ -88,42 +87,34 @@ def user_create():
 
 # login
 @app.route('/api/login', methods=['GET', 'POST'])
-def user_login():
+def login():
     if request.method == 'POST':
         data = request.form.to_dict()
-        print(data, flush=True)
+        # print(data, flush=True)
         user_id = data['userID'].strip()
         user_password = data['userPassword'].strip()
 
         user = User.query.filter_by(userID=user_id).first()
         if user and user.userPassword == user_password:
-            login_user(user)
+            login_user(user, remember=True)
             print("current user: ", current_user, flush=True)
-            return redirect(url_for('index'))
+            # return redirect(url_for('index'))
+            return jsonify({'message': 'User login successfully'}), 200
         else:
-            return 'Invalid user ID or password'
+            return jsonify({'message': 'Invalid user ID or password'}), 401
     else:
         return render_template('login.html')
-        # return """<form method=post>
-        # Name: <input name="name"><br>
-        # Password: <input name="password" type=password><br>
-        # <button>Log In</button>
-        # </form>"""
+
 
 # logout
 @app.route('/api/logout')
 @login_required
-def user_logout():
+def logout():
     logout_user()
-    return redirect(url_for('index'))
+    # return redirect(url_for('user_login'))
+    return jsonify({'message': 'User logout successfully'}), 200
 
-# home
-@app.route('/')
-@login_required
-def index():
-    return f'Hello, {current_user.displayName}! <a href="/logout">Logout</a>'
-
-
+# add and get order
 @app.route('/api/orders', methods=['GET', 'POST'])
 @login_required
 def manage_items():
@@ -132,8 +123,6 @@ def manage_items():
     return get_orders()
 
 def add_order():
-    # data = request.json
-    # data = request.form
     print(request.form.to_dict(), flush=True)
 
     # file upload
@@ -163,7 +152,7 @@ def add_order():
         createdBy=createdBy,
         filePath=filePath,
         approvedAt=None,
-        approvedBy=None,
+        approvedBy=request.form.get('approvedBy'),
         completedAt=None,
         completedBy=None 
     )
@@ -174,9 +163,9 @@ def add_order():
     
     return jsonify({'message': 'Order created successfully'}), 201
 
-def get_orders():
 
-    # get order method
+def get_orders():
+    # get sorting method
     sort_by = request.args.get('sort_by', 'priority')  # deafult:priority
     if sort_by == 'createdAt':
         orders = Orders.query.order_by(Orders.createdAt.desc()).all()
@@ -207,6 +196,7 @@ def get_orders():
     return jsonify(orders_json), 200
 
 
+# get order with id
 @app.route('/api/orders/<int:id>', methods=['GET'])
 @login_required
 def get_order_with_id(id):
@@ -227,9 +217,10 @@ def get_order_with_id(id):
     return jsonify(order_json), 200
 
 
+# modify order priority
 @app.route('/api/orders/<int:id>', methods=['PUT'])
 @login_required
-def edit_item(id):
+def adjust_order_priority(id):
     order = Orders.query.get_or_404(id)
 
     print(order.createdBy, current_user.userID, flush=True)
@@ -243,12 +234,78 @@ def edit_item(id):
     return jsonify({'message': 'Item updated'}), 200
 
 
-# @app.route('/api/items/<int:id>', methods=['DELETE'])
-# def delete_item(id):
-#     item = Item.query.get_or_404(id)
-#     db.session.delete(item)
-#     db.session.commit()
-#     return jsonify({'message': 'Item deleted'}), 200
+# get orders waiting for user to approve
+@app.route('/api/get_approve_order', methods=['GET'])
+@login_required
+def get_approve_order():
+    approve_orders = Orders.query.filter_by(approvedBy=current_user.userID, status='Issued').all()
+
+    orders_json = [{'serialNo': order.serialNo,
+                    'priority': order.priority,
+                    'factory': order.factory,
+                    'lab': order.lab,
+                    'status': order.status,
+                    'createdAt': order.createdAt,
+                    'createdBy': order.createdBy,
+                    'filePath': order.filePath,
+                    'approvedAt': order.approvedAt,
+                    'approvedBy': order.approvedBy,
+                    'completedAt': order.completedAt,
+                    'completedBy': order.completedBy} for order in approve_orders]
+    return jsonify(orders_json), 200
+
+
+# approve order
+@app.route('/api/approve_order/<int:id>', methods=['POST'])
+@login_required
+def approve_order(id):
+    order = Orders.query.get_or_404(id)
+    print("order: ", order, flush=True)
+
+    if order is None:
+        return jsonify({"error": "Order not found"}), 404
+    elif order.approvedBy != current_user.userID:
+        return jsonify({"error": "Only approver can approve orders"}), 403
+    
+    if request.json.get("action") == "Approve":
+        order.status = "Approved"
+        order.approvedAt = db.func.current_timestamp()
+    elif request.json.get("action") == "Reject":
+        order.status = "Rejected"
+
+    db.session.commit()
+    
+    return jsonify({"message": "Order updated successfully"}), 200
+
+
+# complete order
+@app.route('/api/complete_order/<int:id>', methods=['POST'])
+@login_required
+def complete_order(id):
+    order = Orders.query.get_or_404(id)
+
+    if order is None:
+        return jsonify({"error": "Order not found"}), 404
+    # check user dep
+    if order.lab != current_user.dep:
+        return jsonify({"error": "User department does not match order lab"}), 403
+    
+    # check status
+    if order.approvedBy:
+        if order.status != "Approved":
+            return jsonify({"error": "Order must be approved to complete"}), 403
+    else:
+        if order.status != "Issued":
+            return jsonify({"error": "Order must be issued to complete"}), 403
+    
+    # complete
+    order.status = "Completed"
+    order.completedBy = current_user.userID
+    order.completedAt = db.func.current_timestamp()
+
+    db.session.commit()
+    
+    return jsonify({"message": "Order updated successfully"}), 200
 
 
 

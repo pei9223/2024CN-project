@@ -16,11 +16,11 @@
         function register() {
             const userID = $('#userID').val();
             const userPassword = $('#userPassword').val();
-            const displayName = $('#displayName').val();
+            const dep = $('#dep').val();
             const userdata = {
                     userID: userID,
                     userPassword: userPassword,
-                    displayName: displayName
+                    dep: dep
             };
             $.ajax({
                 url: '/api/register',
@@ -47,8 +47,8 @@
         <input type="text" id="userID" name="userID"><br>
         <label for="userPassword">Password:</label><br>
         <input type="password" id="userPassword" name="userPassword"><br>
-        <label for="displayName">Display Name:</label><br>
-        <input type="text" id="displayName" name="displayName"><br><br>
+        <label for="dep">dep:</label><br>
+        <input type="text" id="dep" name="dep"><br><br>
         <button type="submit">Register</button>
     </form>
 </body>

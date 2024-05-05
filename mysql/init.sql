@@ -6,6 +6,8 @@ DROP TABLE IF EXISTS users;
 -- SET GLOBAL time_zone = 'Asia/Taipei';
 -- SET system_time_zone = CST
 -- SET SQL_MODE='ALLOW_INVALID_DATES';
+SET explicit_defaults_for_timestamp=ON;
+
 
 CREATE TABLE orders (
   serialNo INT NOT NULL AUTO_INCREMENT,
@@ -16,9 +18,9 @@ CREATE TABLE orders (
   createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   createdBy VARCHAR(50) NOT NULL,
   filePath VARCHAR(255) DEFAULT NULL,
-  approvedAt TIMESTAMP DEFAULT '1970-01-01 00:00:01',
+  approvedAt TIMESTAMP DEFAULT NULL,
   approvedBy VARCHAR(50) DEFAULT NULL,
-  completedAt TIMESTAMP DEFAULT '1970-01-01 00:00:01',
+  completedAt TIMESTAMP DEFAULT NULL,
   completedBy VARCHAR(50) DEFAULT NULL,
   PRIMARY KEY (serialNo)
 );
@@ -26,8 +28,9 @@ CREATE TABLE orders (
 CREATE TABLE users (
   userID VARCHAR(50) NOT NULL,
   userPassword VARCHAR(255) NOT NULL,
-  displayName VARCHAR(100) NOT NULL,
+  dep ENUM('Fab A', 'Fab B', 'Fab C', 'chemical', 'surface', 'composition') NOT NULL,
+  -- displayName VARCHAR(100) NOT NULL,
   createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  approvedList JSON NOT NULL,
+  -- approvedList JSON NOT NULL,
   PRIMARY KEY (userID)
 );

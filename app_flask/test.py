@@ -21,7 +21,8 @@ class TestOrdersAPI(unittest.TestCase):
         response = self.app.post('/api/orders', 
                                  data=json.dumps({'priority': 'regular',
                                                   'factory': 'Fab A',
-                                                  'lab': 'chemical'}),
+                                                  'lab': 'chemical',
+                                                  'approvedBy': 'aaa'}),
                                  content_type='application/json')
 
         # 驗證回應

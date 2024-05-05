@@ -11,6 +11,7 @@ SET explicit_defaults_for_timestamp=ON;
 
 CREATE TABLE orders (
   serialNo INT NOT NULL AUTO_INCREMENT,
+  serialString VARCHAR(50) NOT NULL,
   priority ENUM('regular', 'urgent', 'emergency') NOT NULL,
   factory ENUM('Fab A', 'Fab B', 'Fab C') NOT NULL,
   lab ENUM('chemical', 'surface', 'composition') NOT NULL,

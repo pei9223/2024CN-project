@@ -6,6 +6,7 @@ import flask_login
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.utils import secure_filename
 import os
+from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = "secretkey"
@@ -24,6 +25,7 @@ login_manager.login_message = "Please login first"
 class Orders(db.Model):
     __tablename__ = 'orders'
     serialNo = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    serialString = db.Column(db.String(50), nullable=False)
     priority = db.Column(db.Enum('regular', 'urgent', 'emergency'), nullable=False)
     factory = db.Column(db.Enum('Fab A', 'Fab B', 'Fab C'), nullable=False)
     lab = db.Column(db.Enum('chemical', 'surface', 'composition'), nullable=False)
@@ -141,9 +143,21 @@ def add_order():
     status = 'Issued'
     createdAt = db.func.current_timestamp()
     createdBy = current_user.userID
+
+    # create serial string
+    time_label = str(datetime.today().year)[2:] + str(datetime.today().month).zfill(2) + str(datetime.today().day).zfill(2)
+
+    latest_order_id = Orders.query.order_by(Orders.serialNo.desc()).first()
+    if latest_order_id:
+        latest_order_id = int(latest_order_id.serialNo) + 1
+    else:
+        latest_order_id = 1
+
+    serialString = f"{request.form['lab'][:3].upper()}-{time_label}-{str(latest_order_id).zfill(3)}"
     
     # create order
     order = Orders(
+        serialString=serialString,
         priority=request.form['priority'],
         factory=request.form['factory'],
         lab=request.form['lab'],
@@ -182,6 +196,7 @@ def get_orders():
             Orders.createdAt.desc()).all()
 
     orders_json = [{'serialNo': order.serialNo,
+                    'serialString': order.serialString,
                     'priority': order.priority,
                     'factory': order.factory,
                     'lab': order.lab,
@@ -203,6 +218,7 @@ def get_order_with_id(id):
     order = Orders.query.get_or_404(id)
 
     order_json = {'serialNo': order.serialNo,
+                    'serialString': order.serialString,
                     'priority': order.priority,
                     'factory': order.factory,
                     'lab': order.lab,
@@ -234,6 +250,21 @@ def adjust_order_priority(id):
     return jsonify({'message': 'Item updated'}), 200
 
 
+# delete order
+@app.route('/api/orders/<int:id>', methods=['DELETE'])
+@login_required
+def delete_order(id):
+    order = Orders.query.get_or_404(id)
+
+    # check user
+    if order.createdBy != current_user.userID:
+        return jsonify({'error': 'Peimission denied'}), 400
+    
+    db.session.delete(order)
+    db.session.commit()
+    return jsonify({'message': 'Item deleted'}), 200
+
+
 # get orders waiting for user to approve
 @app.route('/api/get_approve_order', methods=['GET'])
 @login_required
@@ -241,6 +272,7 @@ def get_approve_order():
     approve_orders = Orders.query.filter_by(approvedBy=current_user.userID, status='Issued').all()
 
     orders_json = [{'serialNo': order.serialNo,
+                    'serialString': order.serialString,
                     'priority': order.priority,
                     'factory': order.factory,
                     'lab': order.lab,

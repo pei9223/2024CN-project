@@ -51,6 +51,7 @@
   - `sort_by` (string, optional): Sorting parameter. Default is `priority`. Allowed values: `priority`, `createdAt`.
 - **Response:**
   - 200 OK: List of orders in JSON format.
+    - allFilePaths: list of file paths
   
 ---
 
@@ -64,7 +65,9 @@
   - `priority` (string, required): Priority of the order. Allowed values: 'regular', 'urgent', 'emergency'.
   - `factory` (string, required): Factory where the order is placed. Allowed values: 'Fab A', 'Fab B', 'Fab C'.
   - `lab` (string, required): Laboratory for the order. Allowed values: 'chemical', 'surface', 'composition'.
-  - `file` (file, optional): File attachment for the order.
+  - `file` (file, optional): File attachments for the order.
+    - Maximum 16 MB for each file.
+    - Allowed extensions: txt, pdf, png, jpg, jpeg.
   - `approvedBy` (string, optional): User id to approve the order.
 - **Response:**
   - 201 Created: Order creation successful.
@@ -99,6 +102,18 @@
 
 ---
 
+## Delete Order
+
+- **Endpoint:** `/api/orders/<int:id>`
+- **Method:** DELETE
+- **Description:** Delete an order.
+- **Parameters:**
+  - `id` (integer, required in url): Serial number of the order.
+- **Response:**
+  - 200 OK: Order deleted successfully.
+  - 403 Forbidden: If the user is not authorized to delete the order.
+---
+
 ## Get Orders for Approval
 
 - **Endpoint:** `/api/get_approve_order`
@@ -111,7 +126,7 @@
 
 ## Approve Order
 
-- **Endpoint:** `/approve_order/<int:id>`
+- **Endpoint:** `/api/approve_order/<int:id>`
 - **Method:** POST
 - **Description:** Approves or rejects an order.
 - **Content type:** application/json
@@ -128,7 +143,7 @@
 
 ## Complete Order
 
-- **Endpoint:** `/complete_order/<int:id>`
+- **Endpoint:** `/api/complete_order/<int:id>`
 - **Method:** POST
 - **Description:** Marks an order as completed.
 - **Parameters:**
@@ -140,3 +155,13 @@
 
 ---
 
+## Download file
+
+- **Endpoint:** `/api/download`
+- **Method:** POST
+- **Description:** Marks an order as completed.
+- **Parameters:**
+  - `filePath` (string): File path to download.
+- **Response:**
+  - 200 OK: Content with file.
+  - 404 Not Found: If the file does not exist.

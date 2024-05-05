@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, url_for, request, redirect, flash, render_template
+from flask import Flask, request, jsonify, url_for, request, redirect, flash, render_template, send_file
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import case
 from sqlalchemy.dialects.postgresql import ARRAY
@@ -12,7 +12,10 @@ app = Flask(__name__)
 app.secret_key = "secretkey"
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:rootpassword@db/labapp'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # file max 16MB
 db = SQLAlchemy(app)
+
+ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg'])
 
 # flask login
 login_manager = LoginManager()
@@ -48,6 +51,17 @@ class User(UserMixin, db.Model):
     def get_id(self):
         return self.userID
     
+# check file extension    
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+# get all file paths in the folder
+def get_alll_file_paths(folder_path):
+    if folder_path and os.path.isdir(folder_path):
+        return [os.path.join(folder_path, x) for x in os.listdir(folder_path)]
+    else: return None
+
     
 # login user data
 @login_manager.user_loader
@@ -126,18 +140,6 @@ def manage_items():
 
 def add_order():
     print(request.form.to_dict(), flush=True)
-
-    # file upload
-    filePath = None
-    if 'file' in request.files:
-        file = request.files['file']
-        if file:
-            filename = secure_filename(file.filename)
-            file_path = os.path.join('uploads/', filename)
-            file.save(file_path)
-            filePath = file_path
-        # else:
-        #     return jsonify({'error': 'No file selected'}), 400
     
     # system created values
     status = 'Issued'
@@ -154,6 +156,24 @@ def add_order():
         latest_order_id = 1
 
     serialString = f"{request.form['lab'][:3].upper()}-{time_label}-{str(latest_order_id).zfill(3)}"
+
+    # file upload
+    filePath = None
+    files = request.files.getlist("file")
+    if len(files):                              # there are files uploded
+        filePath = 'uploads/' + serialString
+        print('====', filePath, flush=True)
+        if not os.path.isdir(filePath):
+            os.mkdir(filePath)
+
+        for file in files:
+            print(file, flush=True)
+            if allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                file_path = os.path.join(filePath, filename)
+                file.save(file_path)
+            else:
+                return jsonify({'error': 'File not allowed'}), 403
     
     # create order
     order = Orders(
@@ -204,6 +224,7 @@ def get_orders():
                     'createdAt': order.createdAt,
                     'createdBy': order.createdBy,
                     'filePath': order.filePath,
+                    'allFilePaths': get_alll_file_paths(order.filePath),
                     'approvedAt': order.approvedAt,
                     'approvedBy': order.approvedBy,
                     'completedAt': order.completedAt,
@@ -226,6 +247,7 @@ def get_order_with_id(id):
                     'createdAt': order.createdAt,
                     'createdBy': order.createdBy,
                     'filePath': order.filePath,
+                    'allFilePaths': get_alll_file_paths(order.filePath),
                     'approvedAt': order.approvedAt,
                     'approvedBy': order.approvedBy,
                     'completedAt': order.completedAt,
@@ -280,6 +302,7 @@ def get_approve_order():
                     'createdAt': order.createdAt,
                     'createdBy': order.createdBy,
                     'filePath': order.filePath,
+                    'allFilePaths': get_alll_file_paths(order.filePath),
                     'approvedAt': order.approvedAt,
                     'approvedBy': order.approvedBy,
                     'completedAt': order.completedAt,
@@ -339,6 +362,16 @@ def complete_order(id):
     
     return jsonify({"message": "Order updated successfully"}), 200
 
+
+# download file
+@app.route('/api/download', methods=['POST'])
+@login_required
+def download_file():
+    file_path = request.json.get('filePath')
+    if not os.path.isfile(file_path):
+        return jsonify({"error": "File not found"}), 404
+    
+    return send_file(file_path, as_attachment=True)
 
 
 if __name__ == '__main__':

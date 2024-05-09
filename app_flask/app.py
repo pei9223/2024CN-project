@@ -330,6 +330,7 @@ def approve_order(id):
         order.approvedAt = db.func.current_timestamp()
     elif request.json.get("action") == "Reject":
         order.status = "Rejected"
+        order.approvedAt = db.func.current_timestamp()
 
     db.session.commit()
     

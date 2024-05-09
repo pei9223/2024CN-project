@@ -7,6 +7,9 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 from werkzeug.utils import secure_filename
 import os
 from datetime import datetime
+import subprocess
+import re
+
 
 app = Flask(__name__)
 app.secret_key = "secretkey"
@@ -372,6 +375,25 @@ def download_file():
         return jsonify({"error": "File not found"}), 404
     
     return send_file(file_path, as_attachment=True)
+
+# get order count
+@app.route('/api/count_order', methods=['GET'])
+@login_required
+def count_order():
+    status_counts = db.session.query(Orders.status, db.func.count()).group_by(Orders.status).all()
+    status_dict = {status: count for status, count in status_counts}
+    return jsonify(status_dict), 200
+
+
+@app.route('/api/used_space', methods=['GET'])
+@login_required
+def used_space():
+    output = subprocess.check_output(["du", "-s", 'uploads'])
+    subprocess_output = output.decode("utf-8")
+    print(subprocess_output, flush=True)
+    used  = subprocess_output.split('\t')[0]
+
+    return jsonify({'used': used}), 200
 
 
 if __name__ == '__main__':

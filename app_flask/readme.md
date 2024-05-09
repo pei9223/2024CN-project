@@ -165,3 +165,23 @@
 - **Response:**
   - 200 OK: Content with file.
   - 404 Not Found: If the file does not exist.
+
+---
+
+## Count order
+
+- **Endpoint:** `/api/count_order`
+- **Method:** GET
+- **Description:** Count the amount of order in each status.
+- **Response:**
+  - 200 OK: json {status: number}.
+
+---
+
+## Get used space
+
+- **Endpoint:** `/api/used_space`
+- **Method:** GET
+- **Description:** Get thr used space of the download files folder.
+- **Response:**
+  - 200 OK: json {used: number (KB)}.

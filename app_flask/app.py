@@ -9,11 +9,19 @@ import os
 from datetime import datetime
 import subprocess
 import re
+from flask_cors import CORS
+
+
 
 
 app = Flask(__name__)
+
+# enable CORS
+CORS(app, resources={r'/*': {'origins': '*'}})
+
 app.secret_key = "secretkey"
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:rootpassword@db/labapp'
+# app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:rootpassword@db/labapp'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://myuser:mypassword@localhost/labapp'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # file max 16MB
 db = SQLAlchemy(app)
@@ -97,32 +105,35 @@ def user_create():
             # approvedList={}
         )
 
-        # add order to db
+        # add user to db
         db.session.add(user)
         db.session.commit()
         
-        return jsonify({'message': 'Order created successfully'}), 201
+        return jsonify({'message': 'User created successfully'}), 201
 
 
 # login
-@app.route('/api/login', methods=['GET', 'POST'])
+@app.route('/api/login', methods=['POST'])
 def login():
-    if request.method == 'POST':
-        data = request.form.to_dict()
-        # print(data, flush=True)
-        user_id = data['userID'].strip()
-        user_password = data['userPassword'].strip()
+    data = request.json
+    app.logger.info('Received data from frontend: %s', data)
+    
+    if not data:
+        return jsonify({'message': 'Missing JSON data in request'}), 400
+    
+    user_id = data.get('userID', '').strip()
+    user_password = data.get('userPassword', '').strip()
 
-        user = User.query.filter_by(userID=user_id).first()
-        if user and user.userPassword == user_password:
-            login_user(user, remember=True)
-            print("current user: ", current_user, flush=True)
-            # return redirect(url_for('index'))
-            return jsonify({'message': 'User login successfully'}), 200
-        else:
-            return jsonify({'message': 'Invalid user ID or password'}), 401
+    if not user_id or not user_password:
+        return jsonify({'message': 'User ID or password missing in request'}), 400
+
+    user = User.query.filter_by(userID=user_id).first()
+    if user and user.userPassword == user_password:
+        login_user(user, remember=True)
+        return jsonify({'message': 'User login successfully'}), 200
     else:
-        return render_template('login.html')
+        return jsonify({'message': 'Invalid user ID or password'}), 401
+
 
 
 # logout

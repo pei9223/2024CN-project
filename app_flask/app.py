@@ -101,7 +101,7 @@ def user_create():
         db.session.add(user)
         db.session.commit()
         
-        return jsonify({'message': 'Order created successfully'}), 201
+        return jsonify({'message': 'User created successfully'}), 201
 
 
 # login
@@ -272,7 +272,7 @@ def adjust_order_priority(id):
     new_priority = request.json['priority']
     order.priority = new_priority
     db.session.commit()
-    return jsonify({'message': 'Item updated'}), 200
+    return jsonify({'message': 'Order updated'}), 200
 
 
 # delete order
@@ -287,7 +287,7 @@ def delete_order(id):
     
     db.session.delete(order)
     db.session.commit()
-    return jsonify({'message': 'Item deleted'}), 200
+    return jsonify({'message': 'Order deleted'}), 200
 
 
 # get orders waiting for user to approve

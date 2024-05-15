@@ -20,8 +20,8 @@ app = Flask(__name__)
 CORS(app, resources={r'/*': {'origins': '*'}})
 
 app.secret_key = "secretkey"
-# app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:rootpassword@db/labapp'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://myuser:mypassword@localhost/labapp'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:rootpassword@db/labapp'
+# app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://myuser:mypassword@localhost/labapp'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # file max 16MB
 db = SQLAlchemy(app)

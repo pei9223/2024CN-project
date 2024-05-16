@@ -390,7 +390,7 @@ def download_file():
 
 # get order count
 @app.route('/api/count_order', methods=['GET'])
-@login_required
+# @login_required
 def count_order():
     status_counts = db.session.query(Orders.status, db.func.count()).group_by(Orders.status).all()
     status_dict = {status: count for status, count in status_counts}
@@ -398,7 +398,7 @@ def count_order():
 
 
 @app.route('/api/used_space', methods=['GET'])
-@login_required
+# @login_required
 def used_space():
     output = subprocess.check_output(["du", "-s", 'uploads'])
     subprocess_output = output.decode("utf-8")

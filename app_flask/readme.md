@@ -170,11 +170,23 @@
 
 ## Count order
 
-- **Endpoint:** `/api/count_order`
+- **Endpoint:** `/api/count_order_by_status`
 - **Method:** GET
 - **Description:** Count the amount of order in each status.
 - **Response:**
-  - 200 OK: json {status: number}.
+  - 200 OK: json `{status: number}`.
+
+---
+
+## Count order
+
+- **Endpoint:** `/api/count_order_by_type`
+- **Method:** GET
+- **Description:** Count the amount of order in each status and types.
+- **Response:**
+  - 200 OK: json `[{attribute: type,  
+                    count: {status: number}  
+                  }].`
 
 ---
 
@@ -184,4 +196,4 @@
 - **Method:** GET
 - **Description:** Get thr used space of the download files folder.
 - **Response:**
-  - 200 OK: json {used: number (KB)}.
+  - 200 OK: json `{used: number (KB)}`.

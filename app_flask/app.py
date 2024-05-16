@@ -9,19 +9,11 @@ import os
 from datetime import datetime
 import subprocess
 import re
-from flask_cors import CORS
-
-
 
 
 app = Flask(__name__)
-
-# enable CORS
-CORS(app, resources={r'/*': {'origins': '*'}})
-
 app.secret_key = "secretkey"
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:rootpassword@db/labapp'
-# app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://myuser:mypassword@localhost/labapp'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # file max 16MB
 db = SQLAlchemy(app)
@@ -105,7 +97,7 @@ def user_create():
             # approvedList={}
         )
 
-        # add user to db
+        # add order to db
         db.session.add(user)
         db.session.commit()
         
@@ -113,27 +105,24 @@ def user_create():
 
 
 # login
-@app.route('/api/login', methods=['POST'])
+@app.route('/api/login', methods=['GET', 'POST'])
 def login():
-    data = request.json
-    app.logger.info('Received data from frontend: %s', data)
-    
-    if not data:
-        return jsonify({'message': 'Missing JSON data in request'}), 400
-    
-    user_id = data.get('userID', '').strip()
-    user_password = data.get('userPassword', '').strip()
+    if request.method == 'POST':
+        data = request.form.to_dict()
+        # print(data, flush=True)
+        user_id = data['userID'].strip()
+        user_password = data['userPassword'].strip()
 
-    if not user_id or not user_password:
-        return jsonify({'message': 'User ID or password missing in request'}), 400
-
-    user = User.query.filter_by(userID=user_id).first()
-    if user and user.userPassword == user_password:
-        login_user(user, remember=True)
-        return jsonify({'message': 'User login successfully'}), 200
+        user = User.query.filter_by(userID=user_id).first()
+        if user and user.userPassword == user_password:
+            login_user(user, remember=True)
+            print("current user: ", current_user, flush=True)
+            # return redirect(url_for('index'))
+            return jsonify({'message': 'User login successfully'}), 200
+        else:
+            return jsonify({'message': 'Invalid user ID or password'}), 401
     else:
-        return jsonify({'message': 'Invalid user ID or password'}), 401
-
+        return render_template('login.html')
 
 
 # logout
@@ -388,17 +377,44 @@ def download_file():
     
     return send_file(file_path, as_attachment=True)
 
-# get order count
-@app.route('/api/count_order', methods=['GET'])
+# get order count (by status)
+@app.route('/api/count_order_by_status', methods=['GET'])
 # @login_required
-def count_order():
-    status_counts = db.session.query(Orders.status, db.func.count()).group_by(Orders.status).all()
-    status_dict = {status: count for status, count in status_counts}
-    return jsonify(status_dict), 200
+def count_order_by_status():
+    result = {}
+    for status in ['Issued', 'Approved', 'Completed', 'Rejected']:
+        status_counts = Orders.query.filter_by(**{'status': status}).count()
+        result[status] = status_counts
+
+    return jsonify(result), 200
+
+
+# get order count (by type)
+@app.route('/api/count_order_by_type', methods=['GET'])
+# @login_required
+def count_order_by_type():
+    result = []
+
+    combinations = [
+        {'attribute': 'priority', 'values': ['regular', 'urgent', 'emergency']},
+        {'attribute': 'factory', 'values': ['Fab A', 'Fab B', 'Fab C']},
+        {'attribute': 'lab', 'values': ['chemical', 'surface', 'composition']}
+    ]
+
+    for combination in combinations:
+        attribute = combination['attribute']
+        for value in combination['values']:
+            attribute_count = {attribute: value, 'count': {}}
+            for status in ['Issued', 'Approved', 'Completed', 'Rejected']:
+                count = Orders.query.filter_by(**{attribute: value, 'status': status}).count()
+                attribute_count['count'][status] = count
+            result.append(attribute_count)
+
+    return jsonify(result), 200
 
 
 @app.route('/api/used_space', methods=['GET'])
-# @login_required
+@login_required
 def used_space():
     output = subprocess.check_output(["du", "-s", 'uploads'])
     subprocess_output = output.decode("utf-8")

@@ -11,6 +11,6 @@ ENV FLASK_APP=app.py
 ENV FLASK_RUN_HOST=0.0.0.0
 ENV TZ="Asia/Taipei"
 
-EXPOSE 5000
+EXPOSE 5001
 
-CMD ["flask", "run"]
+CMD ["flask", "run", "--port=5001"]

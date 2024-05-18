@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, url_for, request, redirect, flash, render_template, send_file
+from flask import Flask, request, jsonify, url_for, request, redirect, flash, render_template, send_file, make_response
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import case
 from sqlalchemy.dialects.postgresql import ARRAY
@@ -112,6 +112,7 @@ def user_create():
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.json
+    # print(request.headers['Cookie'], flush=True)
     app.logger.info('Received data from frontend: %s', data)
     
     if not data:
@@ -126,7 +127,15 @@ def login():
     user = User.query.filter_by(userID=user_id).first()
     if user and user.userPassword == user_password:
         login_user(user, remember=True)
-        return jsonify({'message': 'User login successfully'}), 200
+
+        # set cookie
+        response = make_response('User login successfully', 200)
+        response.headers['Content-Type'] = 'application/json'
+        response.set_cookie('remember_token', request.cookies.get('remember_token'))
+        response.set_cookie('session', request.cookies.get('session'))
+
+        return response
+        # return jsonify({'message': 'User login successfully'}), 200
     else:
         return jsonify({'message': 'Invalid user ID or password'}), 401
 

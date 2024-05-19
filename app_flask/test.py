@@ -1,6 +1,6 @@
 import unittest
 import json
-from app import app, db, Orders
+from app_flask.app_jwt import app, db, Orders
 
 class TestOrdersAPI(unittest.TestCase):
     def setUp(self):

@@ -3,15 +3,13 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import case
 from sqlalchemy.dialects.postgresql import ARRAY
 import flask_login
-from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.utils import secure_filename
 import os
 from datetime import datetime
 import subprocess
 import re
 from flask_cors import CORS
-from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required, JWTManager
-
 
 app = Flask(__name__)
 
@@ -27,10 +25,11 @@ db = SQLAlchemy(app)
 ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg'])
 
 # flask login
-# login_manager = Login
-
-app.config["JWT_SECRET_KEY"] = "secretkey"
-jwt = JWTManager(app)
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.session_protection = 'basic'
+login_manager.login_view = 'login'
+login_manager.login_message = "Please login first"
 
 
 class Orders(db.Model):
@@ -72,9 +71,9 @@ def get_alll_file_paths(folder_path):
 
     
 # login user data
-# @login_manager.user_loader
-# def load_user(user_id):
-#     return User.query.get(user_id)
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(user_id)
 
 # create user
 @app.route('/api/register', methods=['GET', 'POST'])
@@ -127,17 +126,15 @@ def login():
 
     user = User.query.filter_by(userID=user_id).first()
     if user and user.userPassword == user_password:
-        # login_user(user, remember=True)
+        login_user(user, remember=True)
 
         # set cookie
-        # response = make_response('User login successfully', 200)
-        # response.headers['Content-Type'] = 'application/json'
-        # response.set_cookie('remember_token', request.cookies.get('remember_token'))
-        # response.set_cookie('session', request.cookies.get('session'))
+        response = make_response('User login successfully', 200)
+        response.headers['Content-Type'] = 'application/json'
+        response.set_cookie('remember_token', request.cookies.get('remember_token'))
+        response.set_cookie('session', request.cookies.get('session'))
 
-        # return response
-        access_token = create_access_token(identity=user_id)
-        return jsonify(access_token=access_token)
+        return response
         # return jsonify({'message': 'User login successfully'}), 200
     else:
         return jsonify({'message': 'Invalid user ID or password'}), 401
@@ -145,7 +142,7 @@ def login():
 
 # logout
 @app.route('/api/logout')
-@jwt_required()
+@login_required
 def logout():
     logout_user()
     # return redirect(url_for('user_login'))
@@ -153,7 +150,7 @@ def logout():
 
 # add and get order
 @app.route('/api/orders', methods=['GET', 'POST'])
-@jwt_required()
+@login_required
 def manage_items():
     if request.method == 'POST':
         return add_order()
@@ -165,7 +162,7 @@ def add_order():
     # system created values
     status = 'Issued'
     createdAt = db.func.current_timestamp()
-    createdBy = get_jwt_identity()
+    createdBy = current_user.userID
 
     # create serial string
     time_label = str(datetime.today().year)[2:] + str(datetime.today().month).zfill(2) + str(datetime.today().day).zfill(2)
@@ -260,7 +257,7 @@ def get_orders():
 
 # get order with id
 @app.route('/api/orders/<int:id>', methods=['GET'])
-@jwt_required()
+@login_required
 def get_order_with_id(id):
     order = Orders.query.get_or_404(id)
 
@@ -283,14 +280,13 @@ def get_order_with_id(id):
 
 # modify order priority
 @app.route('/api/orders/<int:id>', methods=['PUT'])
-@jwt_required()
+@login_required
 def adjust_order_priority(id):
     order = Orders.query.get_or_404(id)
 
-    current_user = get_jwt_identity()
-    print(order.createdBy, current_user, flush=True)
+    print(order.createdBy, current_user.userID, flush=True)
     # check user
-    if order.createdBy != current_user:
+    if order.createdBy != current_user.userID:
         return jsonify({'error': 'Peimission denied'}), 400
     
     new_priority = request.json['priority']
@@ -301,13 +297,12 @@ def adjust_order_priority(id):
 
 # delete order
 @app.route('/api/orders/<int:id>', methods=['DELETE'])
-@jwt_required()
+@login_required
 def delete_order(id):
     order = Orders.query.get_or_404(id)
 
     # check user
-    current_user = get_jwt_identity()
-    if order.createdBy != current_user:
+    if order.createdBy != current_user.userID:
         return jsonify({'error': 'Peimission denied'}), 400
     
     db.session.delete(order)
@@ -317,10 +312,9 @@ def delete_order(id):
 
 # get orders waiting for user to approve
 @app.route('/api/get_approve_order', methods=['GET'])
-@jwt_required()
+@login_required
 def get_approve_order():
-    current_user = get_jwt_identity()
-    approve_orders = Orders.query.filter_by(approvedBy=current_user, status='Issued').all()
+    approve_orders = Orders.query.filter_by(approvedBy=current_user.userID, status='Issued').all()
 
     orders_json = [{'serialNo': order.serialNo,
                     'serialString': order.serialString,
@@ -341,15 +335,14 @@ def get_approve_order():
 
 # approve order
 @app.route('/api/approve_order/<int:id>', methods=['POST'])
-@jwt_required()
+@login_required
 def approve_order(id):
     order = Orders.query.get_or_404(id)
     print("order: ", order, flush=True)
-    current_user = get_jwt_identity()
 
     if order is None:
         return jsonify({"error": "Order not found"}), 404
-    elif order.approvedBy != current_user:
+    elif order.approvedBy != current_user.userID:
         return jsonify({"error": "Only approver can approve orders"}), 403
     
     if request.json.get("action") == "Approve":
@@ -366,16 +359,14 @@ def approve_order(id):
 
 # complete order
 @app.route('/api/complete_order/<int:id>', methods=['POST'])
-@jwt_required()
+@login_required
 def complete_order(id):
     order = Orders.query.get_or_404(id)
-    current_user = get_jwt_identity()
 
     if order is None:
         return jsonify({"error": "Order not found"}), 404
     # check user dep
-    current_user_dept = User.query.filter_by(userID=get_jwt_identity()).first()
-    if order.lab != current_user_dept:
+    if order.lab != current_user.dep:
         return jsonify({"error": "User department does not match order lab"}), 403
     
     # check status
@@ -388,7 +379,7 @@ def complete_order(id):
     
     # complete
     order.status = "Completed"
-    order.completedBy = current_user
+    order.completedBy = current_user.userID
     order.completedAt = db.func.current_timestamp()
 
     db.session.commit()
@@ -398,7 +389,7 @@ def complete_order(id):
 
 # download file
 @app.route('/api/download', methods=['POST'])
-@jwt_required()
+@login_required
 def download_file():
     file_path = request.json.get('filePath')
     if not os.path.isfile(file_path):
@@ -408,7 +399,7 @@ def download_file():
 
 # get order count (by status)
 @app.route('/api/count_order_by_status', methods=['GET'])
-@jwt_required()
+# @login_required
 def count_order_by_status():
     result = {}
     for status in ['Issued', 'Approved', 'Completed', 'Rejected']:
@@ -420,7 +411,7 @@ def count_order_by_status():
 
 # get order count (by type)
 @app.route('/api/count_order_by_type', methods=['GET'])
-@jwt_required()
+# @login_required
 def count_order_by_type():
     result = []
 
@@ -443,7 +434,7 @@ def count_order_by_type():
 
 
 @app.route('/api/used_space', methods=['GET'])
-@jwt_required()
+@login_required
 def used_space():
     output = subprocess.check_output(["du", "-s", 'uploads'])
     subprocess_output = output.decode("utf-8")

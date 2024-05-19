@@ -127,18 +127,14 @@ def login():
 
     user = User.query.filter_by(userID=user_id).first()
     if user and user.userPassword == user_password:
-        # login_user(user, remember=True)
-
         # set cookie
-        # response = make_response('User login successfully', 200)
-        # response.headers['Content-Type'] = 'application/json'
-        # response.set_cookie('remember_token', request.cookies.get('remember_token'))
-        # response.set_cookie('session', request.cookies.get('session'))
-
-        # return response
         access_token = create_access_token(identity=user_id)
-        return jsonify(access_token=access_token)
-        # return jsonify({'message': 'User login successfully'}), 200
+        return jsonify({
+            'access_token': access_token,
+            'userID': user.userID,
+            'dep': user.dep,
+            'message': 'User login successfully'
+        }), 200
     else:
         return jsonify({'message': 'Invalid user ID or password'}), 401
 

@@ -144,7 +144,8 @@ def login():
         # response.set_cookie('remember_token', request.cookies.get('remember_token'))
         # response.set_cookie('session', request.cookies.get('session'))
         # return response
-        return jsonify({'message': 'User login successfully'}), 200
+
+        return jsonify({'userID': user.userID, 'dep': user.dep, 'message': 'User login successfully'}), 200
     else:
         return jsonify({'message': 'Invalid user ID or password'}), 401
 

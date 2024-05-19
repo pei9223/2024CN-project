@@ -27,7 +27,7 @@ services:
 
   db:
     image: mysql:5.7
-    platform: linux/amd64
+    # platform: linux/amd64
     container_name: mysql_db
     environment:
       - MYSQL_DATABASE=mydatabase

@@ -377,8 +377,8 @@ def complete_order(id):
     if order is None:
         return jsonify({"error": "Order not found"}), 404
     # check user dep
-    current_user_dept = User.query.filter_by(userID=get_jwt_identity()).first()
-    if order.lab != current_user_dept:
+    user = User.query.filter_by(userID=get_jwt_identity()).first()
+    if order.lab != user.dep:
         return jsonify({"error": "User department does not match order lab"}), 403
     
     # check status

@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, url_for, request, redirect, flash, render_template, send_file, make_response
+from flask import Flask, request, jsonify, url_for, request, redirect, flash, render_template, send_file, make_response, session
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import case
 from sqlalchemy.dialects.postgresql import ARRAY
@@ -14,12 +14,15 @@ from flask_cors import CORS
 app = Flask(__name__)
 
 # enable CORS
-CORS(app, resources={r'/*': {'origins': '*'}})
+CORS(app, resources={r'/*': {'origins': '*'}}, supports_credentials=True)
 
 app.secret_key = "secretkey"
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:rootpassword@db/labapp'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # file max 16MB
+app.config['SESSION_COOKIE_HTTPONLY'] = False
+app.config['SESSION_COOKIE_SAMESITE'] = None
+app.config['LOGIN_DISABLED'] = True
 db = SQLAlchemy(app)
 
 ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg'])
@@ -74,6 +77,8 @@ def get_alll_file_paths(folder_path):
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(user_id)
+    # return db.session.get(User, int(user_id))
+    # return User.query.filter_by(userID=user_id).first()
 
 # create user
 @app.route('/api/register', methods=['GET', 'POST'])
@@ -125,17 +130,21 @@ def login():
         return jsonify({'message': 'User ID or password missing in request'}), 400
 
     user = User.query.filter_by(userID=user_id).first()
+    # user_id = getattr(user, login_manager.id_attribute)()
+    # id = login_manager._session_identifier_generator()
+    # print(user, user.is_active, flush=True)
+    # print(user_id, flush=True)
+    # print(id, flush=True)
     if user and user.userPassword == user_password:
         login_user(user, remember=True)
-
+        # print(user.is_authenticated, flush=True)
         # set cookie
-        response = make_response('User login successfully', 200)
-        response.headers['Content-Type'] = 'application/json'
-        response.set_cookie('remember_token', request.cookies.get('remember_token'))
-        response.set_cookie('session', request.cookies.get('session'))
-
-        return response
-        # return jsonify({'message': 'User login successfully'}), 200
+        # response = make_response('User login successfully', 200)
+        # response.headers['Content-Type'] = 'application/json'
+        # response.set_cookie('remember_token', request.cookies.get('remember_token'))
+        # response.set_cookie('session', request.cookies.get('session'))
+        # return response
+        return jsonify({'message': 'User login successfully'}), 200
     else:
         return jsonify({'message': 'Invalid user ID or password'}), 401
 
@@ -399,7 +408,7 @@ def download_file():
 
 # get order count (by status)
 @app.route('/api/count_order_by_status', methods=['GET'])
-# @login_required
+@login_required
 def count_order_by_status():
     result = {}
     for status in ['Issued', 'Approved', 'Completed', 'Rejected']:
@@ -411,7 +420,7 @@ def count_order_by_status():
 
 # get order count (by type)
 @app.route('/api/count_order_by_type', methods=['GET'])
-# @login_required
+@login_required
 def count_order_by_type():
     result = []
 

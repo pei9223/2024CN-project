@@ -11,6 +11,7 @@ import subprocess
 import re
 from flask_cors import CORS
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required, JWTManager
+from flask_mail import Mail, Message
 
 
 app = Flask(__name__)
@@ -24,14 +25,26 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # file max 16MB
 db = SQLAlchemy(app)
 
-ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg'])
-
-# flask login
-# login_manager = Login
-
+# jwt
 app.config["JWT_SECRET_KEY"] = "secretkey"
 jwt = JWTManager(app)
 
+# flask-email
+app.config.update(
+    DEBUG=False,
+    # EMAIL SETTINGS
+    MAIL_SERVER='smtp.gmail.com',
+    MAIL_PORT=465,
+    MAIL_USE_SSL=True,
+    MAIL_DEFAULT_SENDER=('admin', 'peichun23.cs12@nycu.edu.tw'),
+    MAIL_MAX_EMAILS=10,
+    MAIL_USERNAME='peichun23.cs12@nycu.edu.tw',
+    MAIL_PASSWORD='goxq zpyq fdmm bxrg'
+)
+mail = Mail(app)
+
+
+ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg'])
 
 class Orders(db.Model):
     __tablename__ = 'orders'
@@ -78,12 +91,26 @@ def check_email(email):
         return True
     else:
         return False
-
     
-# login user data
-# @login_manager.user_loader
-# def load_user(user_id):
-#     return User.query.get(user_id)
+# create notification emal message
+def get_email_msg(recipient, order):
+    msg_title = 'New Order Approval Required - ' + str(order.serialString)
+    msg_recipients = [recipient.email]
+    msg = Message(msg_title,
+                  recipients=msg_recipients)
+
+    msg_html = render_template('notification_email.html', 
+                                    recipient_name=recipient.userID, 
+                                    serialString=order.serialString, 
+                                    priority=order.priority, 
+                                    factory=order.factory, 
+                                    lab=order.lab, 
+                                    createdBy=order.createdBy, 
+                                    createdAt=order.createdAt)
+    msg.html = msg_html
+
+    return msg
+
 
 # create user
 @app.route('/api/register', methods=['GET', 'POST'])
@@ -236,6 +263,12 @@ def add_order():
     # add order to db
     db.session.add(order)
     db.session.commit()
+
+    # send notification email
+    if approvedBy:
+        recipient = User.query.filter_by(userID=approvedBy).first()
+        msg = get_email_msg(recipient, order)
+        mail.send(msg)
     
     return jsonify({'message': 'Order created successfully'}), 201
 

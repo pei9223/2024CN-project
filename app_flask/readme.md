@@ -12,9 +12,11 @@
   - `userID` (string, required): Unique identifier for the user.
   - `userPassword` (string, required): Password for the user account.
   - `dep` (string, required): Department of the user. Allowed values: 'Fab A', 'Fab B', 'Fab C', 'chemical', 'surface', 'composition'.
+  - `email` (string, required): Email for the user.
 - **Response:**
   - 201 Created: User registration successful.
   - 400 Bad Request: If the user ID already exists.
+  - 400 Bad Request: If the user email format is invalid.
 
 ---
 

@@ -11,6 +11,7 @@ import subprocess
 import re
 from flask_cors import CORS
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required, JWTManager
+from flask_mail import Mail, Message
 
 
 app = Flask(__name__)
@@ -24,14 +25,26 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # file max 16MB
 db = SQLAlchemy(app)
 
-ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg'])
-
-# flask login
-# login_manager = Login
-
+# jwt
 app.config["JWT_SECRET_KEY"] = "secretkey"
 jwt = JWTManager(app)
 
+# flask-email
+app.config.update(
+    DEBUG=False,
+    # EMAIL SETTINGS
+    MAIL_SERVER='smtp.gmail.com',
+    MAIL_PORT=465,
+    MAIL_USE_SSL=True,
+    MAIL_DEFAULT_SENDER=('admin', 'peichun23.cs12@nycu.edu.tw'),
+    MAIL_MAX_EMAILS=10,
+    MAIL_USERNAME='peichun23.cs12@nycu.edu.tw',
+    MAIL_PASSWORD='goxq zpyq fdmm bxrg'
+)
+mail = Mail(app)
+
+
+ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg'])
 
 class Orders(db.Model):
     __tablename__ = 'orders'
@@ -54,6 +67,7 @@ class User(UserMixin, db.Model):
     userID = db.Column(db.String(50), primary_key=True)
     userPassword = db.Column(db.String(255), nullable=False)
     dep = db.Column(db.Enum('Fab A', 'Fab B', 'Fab C', 'chemical', 'surface', 'composition'), nullable=False)
+    email = db.Column(db.String(255), nullable=False)
     createdAt = db.Column(db.TIMESTAMP, nullable=False, server_default=db.func.current_timestamp())
 
     def get_id(self):
@@ -70,11 +84,33 @@ def get_alll_file_paths(folder_path):
         return [os.path.join(folder_path, x) for x in os.listdir(folder_path)]
     else: return None
 
+# check email format
+def check_email(email):
+    pat = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
+    if re.match(pat,email):
+        return True
+    else:
+        return False
     
-# login user data
-# @login_manager.user_loader
-# def load_user(user_id):
-#     return User.query.get(user_id)
+# create notification emal message
+def get_email_msg(recipient, order):
+    msg_title = 'New Order Approval Required - ' + str(order.serialString)
+    msg_recipients = [recipient.email]
+    msg = Message(msg_title,
+                  recipients=msg_recipients)
+
+    msg_html = render_template('notification_email.html', 
+                                    recipient_name=recipient.userID, 
+                                    serialString=order.serialString, 
+                                    priority=order.priority, 
+                                    factory=order.factory, 
+                                    lab=order.lab, 
+                                    createdBy=order.createdBy, 
+                                    createdAt=order.createdAt)
+    msg.html = msg_html
+
+    return msg
+
 
 # create user
 @app.route('/api/register', methods=['GET', 'POST'])
@@ -86,20 +122,24 @@ def user_create():
         id = data.get('userID')
         pswd = data.get('userPassword')
         dep = data.get('dep')
+        email = data.get('email')
 
         # check if ID existed
         existing_user = User.query.filter_by(userID=id).first()
         if existing_user:
             return jsonify({'error': 'User ID already exists'}), 400
         
+        # check email format
+        if not check_email(email):
+            return jsonify({'error': 'Invalid email format'}), 400
+        
         # create user
         user = User(
             userID=id,
             userPassword=pswd,
             dep=dep,
-            # displayName=name,
+            email=email,
             createdAt=db.func.current_timestamp(),
-            # approvedList={}
         )
 
         # add order to db
@@ -223,6 +263,12 @@ def add_order():
     # add order to db
     db.session.add(order)
     db.session.commit()
+
+    # send notification email
+    if approvedBy:
+        recipient = User.query.filter_by(userID=approvedBy).first()
+        msg = get_email_msg(recipient, order)
+        mail.send(msg)
     
     return jsonify({'message': 'Order created successfully'}), 201
 

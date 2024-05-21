@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>New Order Approval Required</title>
+</head>
+<body>
+    <p>Dear {{ recipient_name }},</p>
+    <p>You have a new order pending your approval. Please find the order details below:</p>
+    <table>
+        <tr>
+            <td><strong>Serial Number:</strong></td>
+            <td>{{ serialString }}</td>
+        </tr>
+        <tr>
+            <td><strong>Priority:</strong></td>
+            <td>{{ priority }}</td>
+        </tr>
+        <tr>
+            <td><strong>Factory:</strong></td>
+            <td>{{ factory }}</td>
+        </tr>
+        <tr>
+            <td><strong>Lab:</strong></td>
+            <td>{{ lab }}</td>
+        </tr>
+        <tr>
+            <td><strong>Created By:</strong></td>
+            <td>{{ createdBy }}</td>
+        </tr>
+        <tr>
+            <td><strong>Created At:</strong></td>
+            <td>{{ createdAt }}</td>
+        </tr>
+    </table>
+    <p>Please log in to the system to approve or review the order.</p>
+</body>
+</html>

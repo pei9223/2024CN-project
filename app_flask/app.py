@@ -54,6 +54,7 @@ class User(UserMixin, db.Model):
     userID = db.Column(db.String(50), primary_key=True)
     userPassword = db.Column(db.String(255), nullable=False)
     dep = db.Column(db.Enum('Fab A', 'Fab B', 'Fab C', 'chemical', 'surface', 'composition'), nullable=False)
+    email = db.Column(db.String(255), nullable=False)
     createdAt = db.Column(db.TIMESTAMP, nullable=False, server_default=db.func.current_timestamp())
 
     def get_id(self):
@@ -69,6 +70,14 @@ def get_alll_file_paths(folder_path):
     if folder_path and os.path.isdir(folder_path):
         return [os.path.join(folder_path, x) for x in os.listdir(folder_path)]
     else: return None
+
+# check email format
+def check_email(email):
+    pat = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
+    if re.match(pat,email):
+        return True
+    else:
+        return False
 
     
 # login user data
@@ -86,20 +95,24 @@ def user_create():
         id = data.get('userID')
         pswd = data.get('userPassword')
         dep = data.get('dep')
+        email = data.get('email')
 
         # check if ID existed
         existing_user = User.query.filter_by(userID=id).first()
         if existing_user:
             return jsonify({'error': 'User ID already exists'}), 400
         
+        # check email format
+        if not check_email(email):
+            return jsonify({'error': 'Invalid email format'}), 400
+        
         # create user
         user = User(
             userID=id,
             userPassword=pswd,
             dep=dep,
-            # displayName=name,
+            email=email,
             createdAt=db.func.current_timestamp(),
-            # approvedList={}
         )
 
         # add order to db

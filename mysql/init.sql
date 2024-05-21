@@ -30,8 +30,7 @@ CREATE TABLE users (
   userID VARCHAR(50) NOT NULL,
   userPassword VARCHAR(255) NOT NULL,
   dep ENUM('Fab A', 'Fab B', 'Fab C', 'chemical', 'surface', 'composition') NOT NULL,
-  -- displayName VARCHAR(100) NOT NULL,
+  email VARCHAR(255) NOT NULL,
   createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  -- approvedList JSON NOT NULL,
   PRIMARY KEY (userID)
 );

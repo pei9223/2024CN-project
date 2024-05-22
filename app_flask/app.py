@@ -61,6 +61,7 @@ class Orders(db.Model):
     approvedBy = db.Column(db.String(50))
     completedAt = db.Column(db.TIMESTAMP)
     completedBy = db.Column(db.String(50))
+    description = db.Column(db.String(1000))
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
@@ -210,6 +211,11 @@ def add_order():
     createdAt = db.func.current_timestamp()
     createdBy = get_jwt_identity()
 
+    # check user
+    create_user = User.query.filter_by(userID=createdBy).first()
+    if create_user.dep not in ['Fab A', 'Fab B', 'Fab C']:
+        return jsonify({'error': 'The user is not allowed to create order'}), 403
+
     # create serial string
     time_label = str(datetime.today().year)[2:] + str(datetime.today().month).zfill(2) + str(datetime.today().day).zfill(2)
 
@@ -257,7 +263,8 @@ def add_order():
         approvedAt=None,
         approvedBy=request.form.get('approvedBy'),
         completedAt=None,
-        completedBy=None 
+        completedBy=None,
+        description =  request.form['description']
     )
 
     # add order to db
@@ -303,7 +310,8 @@ def get_orders():
                     'approvedAt': order.approvedAt,
                     'approvedBy': order.approvedBy,
                     'completedAt': order.completedAt,
-                    'completedBy': order.completedBy} for order in orders]
+                    'completedBy': order.completedBy,
+                    'description': order.description} for order in orders]
     return jsonify(orders_json), 200
 
 
@@ -326,7 +334,8 @@ def get_order_with_id(id):
                     'approvedAt': order.approvedAt,
                     'approvedBy': order.approvedBy,
                     'completedAt': order.completedAt,
-                    'completedBy': order.completedBy}
+                    'completedBy': order.completedBy,
+                    'description': order.description}
     return jsonify(order_json), 200
 
 
@@ -384,7 +393,8 @@ def get_approve_order():
                     'approvedAt': order.approvedAt,
                     'approvedBy': order.approvedBy,
                     'completedAt': order.completedAt,
-                    'completedBy': order.completedBy} for order in approve_orders]
+                    'completedBy': order.completedBy,
+                    'description': order.description} for order in approve_orders]
     return jsonify(orders_json), 200
 
 

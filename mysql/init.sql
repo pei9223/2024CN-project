@@ -23,6 +23,7 @@ CREATE TABLE orders (
   approvedBy VARCHAR(50) DEFAULT NULL,
   completedAt TIMESTAMP DEFAULT NULL,
   completedBy VARCHAR(50) DEFAULT NULL,
+  description VARCHAR(1000) DEFAULT NULL,
   PRIMARY KEY (serialNo)
 );
 

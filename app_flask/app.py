@@ -349,7 +349,7 @@ def adjust_order_priority(id):
     print(order.createdBy, current_user, flush=True)
     # check user
     if order.createdBy != current_user:
-        return jsonify({'error': 'Peimission denied'}), 400
+        return jsonify({'error': 'Peimission denied'}), 403
     
     new_priority = request.json['priority']
     order.priority = new_priority
@@ -366,7 +366,7 @@ def delete_order(id):
     # check user
     current_user = get_jwt_identity()
     if order.createdBy != current_user:
-        return jsonify({'error': 'Peimission denied'}), 400
+        return jsonify({'error': 'Peimission denied'}), 403
     
     db.session.delete(order)
     db.session.commit()

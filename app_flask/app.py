@@ -12,9 +12,28 @@ import re
 from flask_cors import CORS
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required, JWTManager
 from flask_mail import Mail, Message
+from opentelemetry import trace
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.instrumentation.flask import FlaskInstrumentor
+from opentelemetry.instrumentation.requests import RequestsInstrumentor
 
+# Set the tracer provider
+trace.set_tracer_provider(TracerProvider())
+
+# Create an OTLP exporter instance
+exporter = OTLPSpanExporter(
+    endpoint="http://grafana-k8s-monitoring-grafana-agent.default.svc.cluster.local:4317",
+    insecure=True
+)
 
 app = Flask(__name__)
+
+FlaskInstrumentor().instrument_app(app)
+
+# Instrument requests
+RequestsInstrumentor().instrument()
 
 # enable CORS
 CORS(app, resources={r'/*': {'origins': '*'}})

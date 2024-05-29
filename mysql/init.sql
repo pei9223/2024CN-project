@@ -35,3 +35,12 @@ CREATE TABLE users (
   createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (userID)
 );
+
+-- Insert default users
+INSERT INTO users (userID, userPassword, dep, email) VALUES 
+('user_fabA', 'password', 'Fab A', 'tonywon.cs08@nycu.edu.tw'),
+('user_fabB', 'password', 'Fab B', 'tonywon.cs08@nycu.edu.tw'),
+('user_fabC', 'password', 'Fab C', 'tonywon.cs08@nycu.edu.tw'),
+('user_chemical', 'password', 'chemical', 'tonywon.cs08@nycu.edu.tw'),
+('user_surface', 'password', 'surface', 'tonywon.cs08@nycu.edu.tw'),
+('user_composition', 'password', 'composition', 'tonywon.cs08@nycu.edu.tw');

@@ -6,6 +6,7 @@ import flask_login
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required
 from werkzeug.utils import secure_filename
 import os
+import shutil
 from datetime import datetime
 import subprocess
 import re
@@ -386,6 +387,10 @@ def delete_order(id):
     current_user = get_jwt_identity()
     if order.createdBy != current_user:
         return jsonify({'error': 'Peimission denied'}), 403
+    
+    # delete files
+    # if os.path.exists(order.filePath):
+    #     shutil.rmtree(order.filePath)
     
     db.session.delete(order)
     db.session.commit()

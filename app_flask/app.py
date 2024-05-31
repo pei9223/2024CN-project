@@ -389,8 +389,9 @@ def delete_order(id):
         return jsonify({'error': 'Peimission denied'}), 403
     
     # delete files
-    if os.path.exists(order.filePath):
-        shutil.rmtree(order.filePath)
+    if order.filePath:
+        if os.path.exists(order.filePath):
+            shutil.rmtree(order.filePath)
     
     db.session.delete(order)
     db.session.commit()

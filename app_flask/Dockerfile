@@ -10,6 +10,7 @@ COPY . /app
 ENV FLASK_APP=app.py
 ENV FLASK_RUN_HOST=0.0.0.0
 ENV TZ="Asia/Taipei"
+ENV PYTHONPATH=/app
 
 EXPOSE 5001
 

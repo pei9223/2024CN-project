@@ -19,6 +19,7 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
+from config import Config
 
 # Set the tracer provider
 trace.set_tracer_provider(TracerProvider())
@@ -30,6 +31,7 @@ exporter = OTLPSpanExporter(
 )
 
 app = Flask(__name__)
+app.config.from_object(Config)
 
 FlaskInstrumentor().instrument_app(app)
 
@@ -40,27 +42,11 @@ RequestsInstrumentor().instrument()
 CORS(app, resources={r'/*': {'origins': '*'}})
 
 app.secret_key = "secretkey"
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:rootpassword@db/labapp'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # file max 16MB
 db = SQLAlchemy(app)
 
 # jwt
-app.config["JWT_SECRET_KEY"] = "secretkey"
 jwt = JWTManager(app)
-
-# flask-email
-app.config.update(
-    DEBUG=False,
-    # EMAIL SETTINGS
-    MAIL_SERVER='smtp.gmail.com',
-    MAIL_PORT=465,
-    MAIL_USE_SSL=True,
-    MAIL_DEFAULT_SENDER=('admin', 'peichun23.cs12@nycu.edu.tw'),
-    MAIL_MAX_EMAILS=10,
-    MAIL_USERNAME='peichun23.cs12@nycu.edu.tw',
-    MAIL_PASSWORD='goxq zpyq fdmm bxrg'
-)
+# flask-mail
 mail = Mail(app)
 
 

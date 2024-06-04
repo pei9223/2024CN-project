@@ -4,7 +4,7 @@ class Config:
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # file max 16MB
 
     # jwt
-    JWT_SECRET_KEY="secretkey"
+    JWT_SECRET_KEY="xxxx"
 
     DEBUG=False
     # EMAIL SETTINGS
@@ -15,4 +15,4 @@ class Config:
     MAIL_DEFAULT_SENDER=('admin', 'peichun23.cs12@nycu.edu.tw')
     MAIL_MAX_EMAILS=10
     MAIL_USERNAME='peichun23.cs12@nycu.edu.tw'
-    MAIL_PASSWORD='goxq zpyq fdmm bxrg'
+    MAIL_PASSWORD='xxxx'

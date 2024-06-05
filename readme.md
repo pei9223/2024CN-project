@@ -73,6 +73,8 @@
   - `approvedBy` (string, optional): User id to approve the order.
 - **Response:**
   - 201 Created: Order creation successful.
+  - 404 Not Found: If the approvedBy user not found.
+  - 403 Forbidden: If the upload file is not allowed.
   
 ---
 
@@ -100,7 +102,7 @@
   - `priority` (string, required): New priority for the order. Allowed values: 'regular', 'urgent', 'emergency'.
 - **Response:**
   - 200 OK: Order priority updated successfully.
-  - 400 Bad Request: If the user does not have permission to adjust the order.
+  - 403 Forbidden: If the user does not have permission to adjust the order.
 
 ---
 
